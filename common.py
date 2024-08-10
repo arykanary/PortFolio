@@ -3,10 +3,49 @@ import pandas as pd
 import numpy as np
 import requests
 import warnings
-import pytz
 from time import sleep
 import matplotlib.pyplot as plt
 from scipy.stats import pearsonr
+import sqlite3
+import pandas as pd
+from typing import List
+
+plt.rcParams['axes.titlesize'] = 16
+plt.rcParams['figure.constrained_layout.use'] = True
+plt.rcParams['figure.dpi'] = 200
+plt.rcParams['figure.facecolor'] = '#718D99'
+
+
+class SqliteOperator:
+    """Operator class for setting, getting & changing sqlite databases
+
+    https://www.sqlite.org/datatype3.html
+    """
+    def __init__(self, db_path):
+        self.connector = sqlite3.connect(db_path)
+        self.db_path = db_path
+
+    def get_all_tables(self):
+        """Get all the available tables"""
+        return pd.read_sql(f"SELECT * FROM sqlite_master", self.connector, index_col='name')
+
+    def get_table(self, table_name: str, col: (str, List[str]) = '*', index_col: str = None):
+        """Get the data in the specified table"""
+        col = ','.join(col) if isinstance(col, list) else col
+        return pd.read_sql_query(f"SELECT {col} FROM {table_name}", self.connector, index_col=index_col)
+
+    def get_dtypes(self, table_name: str = None):
+        """Get the dtypes of the columns in the specified table"""
+        return pd.read_sql(f"PRAGMA TABLE_INFO({table_name});", self.connector, index_col='cid')
+
+    def add_lines(self, table_name: str, insert_df: pd.DataFrame):
+        """Add data to the specified table"""
+        for ind, row in insert_df.iterrows():
+            row = row.dropna()
+            col = ','.join(row.index.values)
+            val = "','".join(['%s' % x for x in row.values])
+            self.connector.execute(f"INSERT INTO {table_name} ( {col} ) VALUES ( '{val}' );")
+            self.connector.commit()
 
 
 class RWSData:
@@ -237,3 +276,33 @@ def correlation_significance(data: pd.DataFrame):
             corr.loc[cr, (cc, 'Correlation')] = p.statistic
             corr.loc[cr, (cc, 'P-Value')] = p.pvalue
     return corr
+
+
+def get_pie_chart(ax: plt.axis, data: pd.DataFrame, name):
+    grp = data.groupby(name).count().iloc[:, 0]
+    min_cnt = max([20, grp.nlargest(10).min()])
+    misc_brands = grp[(grp<=min_cnt)].index
+    grp['Misc'] = grp.loc[misc_brands].sum()
+    grp.drop(misc_brands, inplace=True)
+    grp.name = f'{name.replace("_", " ").title()} Count'
+    grp.plot.pie(
+        ax=ax,
+        ylabel='',
+        title=grp.name
+    )
+
+
+def get_hist_chart(ax: plt.axis, data: pd.DataFrame, name):
+    data[name].plot.hist(
+        ax=ax,
+        bins=int(20*np.unique(data[name]).size**.25),
+        density=True,
+        title=name.replace("_", " ").title(),
+        histtype='step'
+    )
+    data[name].plot.kde(
+        ax=ax,
+        title=name.replace("_", " ").title(),
+    )
+    ax.set_xlim(data[name].min(), data[name].max())
+    ax.legend(['Histogram', 'Kernel Density'])

@@ -1,3 +1,3 @@
 # PortFolio
 
-In this repository we show some of the smaller example projects we work on.
+In this repository I'll show some sections of projects I've done.
