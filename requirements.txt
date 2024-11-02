@@ -1,7 +1,9 @@
-pandas==2.2
+pandas==1.5
+pyarrow==18.0
 matplotlib==3.9
 requests==2.32
 ipykernel==6.29
 meteostat==1.6
 scipy==1.14
 scikit-learn==1.5
+meteostat==1.6

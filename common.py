@@ -13,6 +13,7 @@ from typing import List
 plt.rcParams['axes.titlesize'] = 16
 plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams['figure.dpi'] = 200
+plt.rcParams['figure.figsize'] = (20, 6)
 plt.rcParams['figure.facecolor'] = '#718D99'
 
 
